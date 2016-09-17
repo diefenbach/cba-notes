@@ -1,0 +1,13 @@
+*.DS_Store
+*.pyc
+*.pyo
+*.DS_Store
+*sitestatic/
+*media/
+*dlcache/
+*.mr.developer.cfg
+*.vagrant
+src/
+project/
+*.cache
+__pycache__
