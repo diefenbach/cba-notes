@@ -19,53 +19,13 @@ class NotesRoot(components.Group):
             ]
         else:
             table = components.Table(id="table", columns=["Title", "Tags", "Modified", "Show", "Edit", "Delete"])
-            tags_select = components.Select(id="tags", label="Tags")
-
+            tags_select = components.Select(id="tags", label="Tags", multiple=True)
             self.initial_components = [
-                MainMenu(id="menu"),
-                # layouts.Grid(
-                #     id="grid",
-                #     initial_components=[
-                #         layouts.Column(
-                #             width=14,
-                #             initial_components=[
-                #                 components.TextInput(label="Strasse", placeholder="Strasse"),
-                #             ],
-                #         ),
-                #         layouts.Column(
-                #             width=2,
-                #             initial_components=[
-                #                 components.TextInput(label="Hausnummer", placeholder="Hausnr."),
-                #             ],
-                #         ),
-                #         layouts.Row(
-                #             initial_components=[
-                #                 layouts.Column(
-                #                     width=4,
-                #                     initial_components=[
-                #                         components.TextInput(label="Hausnummer", placeholder="Hausnr."),
-                #                     ],
-                #                 ),
-                #                 layouts.Column(
-                #                     width=4,
-                #                     initial_components=[
-                #                         components.TextInput(label="Hausnummer", placeholder="Hausnr."),
-                #                     ],
-                #                 ),
-                #             ],
-                #         ),
-                #         layouts.Column(
-                #             initial_components=[
-                #                 components.Button(value="Hurz!"),
-                #             ],
-                #         ),
-                #     ],
-                # ),
-
-                components.Tabs(
-                    id="tabs",
+                MainMenu(id="menu", css_class="large inverted"),
+                components.Tab(
+                    id="tab",
                     initial_components=[
-                        components.Tab(
+                        components.TabItem(
                             id="notes",
                             title="Notes",
                             active=True,
@@ -79,6 +39,7 @@ class NotesRoot(components.Group):
                                         components.TextArea(id="text", label="Text"),
                                         tags_select,
                                         components.Button(id="save-note", value="Add", css_class="primary", handler="handle_save_note"),
+                                        components.HTML(tag="div", text=_("Notes"), css_class="ui sub header padding-top"),
                                         table,
                                     ],
                                 ),
@@ -89,26 +50,6 @@ class NotesRoot(components.Group):
             ]
             self._load_notes(table)
             self._load_tags(tags_select)
-
-    def _load_tags(self, select):
-        select.options = []
-        for tag in Tag.objects.all().order_by("name"):
-            select.options.append({
-                "name": tag.name,
-                "value": tag.name,
-            })
-
-    def _load_notes(self, table):
-        table.data = []
-        for note in Note.objects.all():
-            table.add_data([
-                note.title,
-                ", ".join([tag.name for tag in note.tags.all()]),
-                note.modified,
-                components.Link(id="show-note-{}".format(note.id), text="Show", handler="handle_show_note"),
-                components.Link(id="edit-note-{}".format(note.id), text="Edit", handler="handle_edit_note"),
-                components.Link(id="delete-note-{}".format(note.id), text="Delete", handler="handle_delete_note"),
-            ])
 
     def delete_note(self):
         note_id = self.event_id.split("-")[-1]
@@ -221,7 +162,6 @@ class NotesRoot(components.Group):
 
     def handle_show_note(self):
         note_id = self.event_id.split("-")[-1]
-
         try:
             note = Note.objects.get(pk=note_id)
         except Note.DoesNotExist:
@@ -232,13 +172,32 @@ class NotesRoot(components.Group):
                     id="show-note-modal",
                     header=note.title,
                     initial_components=[
-                        components.Text(value=note.text),
+                        components.HTML(tag="p", text=note.text),
                         components.HTML(tag="p", text="<br/><br/><b>Tags:</b> {}".format(note.get_tags_as_string())),
                     ]
                 )
             )
-
         self.refresh()
+
+    def _load_tags(self, select):
+        select.options = []
+        for tag in Tag.objects.all().order_by("name"):
+            select.options.append({
+                "name": tag.name,
+                "value": tag.name,
+            })
+
+    def _load_notes(self, table):
+        table.data = []
+        for note in Note.objects.all():
+            table.add_row([
+                note.title,
+                ", ".join([tag.name for tag in note.tags.all()]),
+                note.modified,
+                components.Link(id="show-note-{}".format(note.id), text="Show", handler="handle_show_note"),
+                components.Link(id="edit-note-{}".format(note.id), text="Edit", handler="handle_edit_note"),
+                components.Link(id="delete-note-{}".format(note.id), text="Delete", handler="handle_delete_note"),
+            ])
 
 
 class NotesView(CBAView):
