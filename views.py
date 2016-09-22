@@ -1,92 +1,14 @@
 from __future__ import print_function, unicode_literals
 
-from django.contrib.auth import authenticate
-from django.contrib.auth import login, logout
 from django.utils.translation import ugettext_lazy as _
 
-from cba import components, layouts
+from taggit.models import Tag
+from cba import components
 from cba.views import CBAView
-from cba import get_request
 
-from . models import Note
-
-
-class Login(components.Group):
-    def init_components(self):
-        self.initial_components = [
-            layouts.Grid(
-                id="login-form",
-                css_class="middle aligned center aligned",
-                initial_components=[
-                    layouts.Column(
-                        initial_components=[
-                            components.TextInput(
-                                id="username",
-                                label=_("Username")
-                            ),
-                            components.TextInput(
-                                id="password",
-                                label=_("Password")
-                            ),
-                            components.Button(
-                                id="login",
-                                value="Login",
-                                handler="handle_login",
-                                css_class="primary fluid"
-                            ),
-                        ],
-                    ),
-                ],
-            ),
-        ]
-
-    def handle_login(self):
-        username = self.get_component("username").value
-        password = self.get_component("password").value
-        user = authenticate(username=username, password=password)
-
-        request = self.get_request()
-
-        if user is not None:
-            if user.is_active:
-                login(request, user)
-                root = self.get_root()
-                root.refresh_all()
-                root.add_message(_("You are logged in!"), "success")
-            else:
-                self.add_message(_("Your account is not acitve!"), "error")
-        else:
-            self.add_message(_("Username and password don't match!"), "error")
-
-
-class MainMenu(components.Menu):
-    def init_components(self):
-        self.initial_components = [
-            components.MenuItem(name="Logout", handler="handle_logout"),
-            components.MenuItem(name="Test", href="/test.de", default_ajax=False),
-            components.MenuItem(id="about-us", name="About us", handler="handle_about_us"),
-        ]
-
-    def handle_about_us(self):
-        root = self.get_root()
-        root.add_component(
-            components.Modal(
-                id="modal-1",
-                header="About us",
-                initial_components=[
-                    components.Text(
-                        value="""Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.""")
-                ]),
-        )
-        root.refresh()
-
-    def handle_logout(self):
-        request = self.get_request()
-        logout(request)
-
-        root = self.get_root()
-        root.refresh_all()
-        root.add_message(_("You are logged out!"), "success")
+from notes.models import Note
+from notes.components.login import Login
+from notes.components.main_menu import MainMenu
 
 
 class NotesRoot(components.Group):
@@ -96,7 +18,9 @@ class NotesRoot(components.Group):
                 Login(id="login-form"),
             ]
         else:
-            table = components.Table(id="table", columns=["Title", "Created", "Modified", "Show", "Edit", "Delete"])
+            table = components.Table(id="table", columns=["Title", "Tags", "Modified", "Show", "Edit", "Delete"])
+            tags_select = components.Select(id="tags", label="Tags")
+
             self.initial_components = [
                 MainMenu(id="menu"),
                 # layouts.Grid(
@@ -153,6 +77,7 @@ class NotesRoot(components.Group):
                                         components.HiddenInput(id="note-id"),
                                         components.TextInput(id="title", label="Title"),
                                         components.TextArea(id="text", label="Text"),
+                                        tags_select,
                                         components.Button(id="save-note", value="Add", css_class="primary", handler="handle_save_note"),
                                         table,
                                     ],
@@ -163,40 +88,27 @@ class NotesRoot(components.Group):
                 ),
             ]
             self._load_notes(table)
+            self._load_tags(tags_select)
+
+    def _load_tags(self, select):
+        select.options = []
+        for tag in Tag.objects.all().order_by("name"):
+            select.options.append({
+                "name": tag.name,
+                "value": tag.name,
+            })
 
     def _load_notes(self, table):
         table.data = []
         for note in Note.objects.all():
             table.add_data([
                 note.title,
-                note.created,
+                ", ".join([tag.name for tag in note.tags.all()]),
                 note.modified,
                 components.Link(id="show-note-{}".format(note.id), text="Show", handler="handle_show_note"),
                 components.Link(id="edit-note-{}".format(note.id), text="Edit", handler="handle_edit_note"),
                 components.Link(id="delete-note-{}".format(note.id), text="Delete", handler="handle_delete_note"),
             ])
-
-    def handle_edit_note(self):
-        note_id = self.event_id.split("-")[-1]
-
-        try:
-            note = Note.objects.get(pk=note_id)
-        except Note.DoesNotExist:
-            pass
-        else:
-            button = self.get_component("save-note")
-            button.value = "Save"
-
-            title = self.get_component("title")
-            title.value = note.title
-
-            text = self.get_component("text")
-            text.value = note.text
-
-            note_id = self.get_component("note-id")
-            note_id.value = note.id
-
-            button.parent.refresh()
 
     def delete_note(self):
         note_id = self.event_id.split("-")[-1]
@@ -223,9 +135,34 @@ class NotesRoot(components.Group):
         self.add_component(modal)
         self.refresh()
 
-    def handle_save_note(self):
+    def handle_edit_note(self):
+        note_id = self.event_id.split("-")[-1]
 
+        try:
+            note = Note.objects.get(pk=note_id)
+        except Note.DoesNotExist:
+            pass
+        else:
+            button = self.get_component("save-note")
+            button.value = "Save"
+
+            title = self.get_component("title")
+            title.value = note.title
+
+            text = self.get_component("text")
+            text.value = note.text
+
+            note_id = self.get_component("note-id")
+            note_id.value = note.id
+
+            tags = self.get_component("tags")
+            tags.value = [tag.name for tag in note.tags.all()]
+
+            button.parent.refresh()
+
+    def handle_save_note(self):
         request = self.get_request()
+        print(request.POST)
         if request.user.is_anonymous():
             self.add_message("Nix!")
             return
@@ -234,6 +171,7 @@ class NotesRoot(components.Group):
         note_id = self.get_component("note-id")
         title = self.get_component("title")
         text = self.get_component("text")
+        tags = self.get_component("tags")
 
         if title.value == "":
             title.error = _("Title is required!")
@@ -247,32 +185,39 @@ class NotesRoot(components.Group):
 
         if title.value == "" or text.value == "":
             self.add_message(_("Please correct the indicated errors!"), type="error")
+            title.refresh()
+            text.refresh()
 
         if title.value != "" and text.value != "":
             if not note_id.value:
-                Note.objects.create(title=title.value, text=text.value)
+                note = Note.objects.create(title=title.value, text=text.value)
                 self.add_message(_("Note has been added!"), type="success")
             else:
                 note = Note.objects.get(pk=note_id.value)
                 note.title = title.value
                 note.text = text.value
-                note.save()
+
                 self.add_message(_("Note has been modified!"), type="success")
+
+            note.tags.all().delete()
+            for value in tags.value:
+                note.tags.add(value)
+            note.save()
 
             table = self.get_component("table")
             self._load_notes(table)
+            self._load_tags(tags)
+
             table.refresh()
 
             title.clear()
             text.clear()
             note_id.clear()
+            tags.clear()
 
-            button.value = "Add"
+            button.parent.refresh()
 
-        button.parent.refresh()
-
-    def handle_hurz(self):
-        self.add_message("Hurz!")
+            button.value = _("Add")
 
     def handle_show_note(self):
         note_id = self.event_id.split("-")[-1]
@@ -288,6 +233,7 @@ class NotesRoot(components.Group):
                     header=note.title,
                     initial_components=[
                         components.Text(value=note.text),
+                        components.HTML(tag="p", text="<br/><br/><b>Tags:</b> {}".format(note.get_tags_as_string())),
                     ]
                 )
             )
