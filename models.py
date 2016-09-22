@@ -1,7 +1,9 @@
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+
+from taggit.managers import TaggableManager
 
 
 class Note(models.Model):
@@ -9,3 +11,4 @@ class Note(models.Model):
     text = models.TextField(_(u"Text"))
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
+    tags = TaggableManager()
