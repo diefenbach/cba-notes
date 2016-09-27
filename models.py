@@ -18,5 +18,11 @@ class Note(models.Model):
     modified = models.DateTimeField(auto_now=True)
     tags = TaggableManager()
 
+    def render(self):
+        html = "<h1>{}</h1>".format(self.title)
+        html += "<p>{}</p>".format(self.text)
+        html += "<p>{}</p>".format(self.get_tags_as_string())
+        return html
+
     def get_tags_as_string(self):
         return ", ".join([tag.name for tag in self.tags.all()])

@@ -5,13 +5,14 @@ from django.utils.translation import ugettext_lazy as _
 
 from cba import components
 
+from notes.components.note_edit import NoteEdit
+
 
 class MainMenu(components.Menu):
     def init_components(self):
         self.initial_components = [
+            components.MenuItem(name="Add", handler="handle_add_note"),
             components.MenuItem(name="Logout", handler="handle_logout"),
-            components.MenuItem(name="Test", href="/test.de", default_ajax=False),
-            components.MenuItem(name="About us", handler="handle_about_us"),
         ]
 
     def handle_about_us(self):
@@ -26,6 +27,12 @@ class MainMenu(components.Menu):
                 ]),
         )
         root.refresh()
+
+    def handle_add_note(self):
+        note_edit = NoteEdit(id="note-edit", css_class="container form")
+        main = self.get_component("main")
+        main.replace_component("note-view", note_edit)
+        main.refresh()
 
     def handle_logout(self):
         request = self.get_request()
