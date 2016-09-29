@@ -26,15 +26,9 @@ class NoteEdit(components.Group):
         self._load_tags(tags)
 
     def handle_cancel(self):
+        """Handles click on the cancel button.
+        """
         note_view = NoteView(id="note-view")
-
-        note_id = self.get_component("note-id")
-        try:
-            note = Note.objects.get(pk=note_id.value)
-        except Note.DoesNotExist:
-            pass
-        else:
-            note_view.set_current_note(note)
 
         main = self.get_component("main")
         main.replace_component(
@@ -90,13 +84,16 @@ class NoteEdit(components.Group):
             # Replace edit view with note display view and select the current
             # added / edited note
             note_view = NoteView(id="note-view")
-            note_view.set_current_note(note)
+            note_view.load_current_note(note.id)
 
             main = self.get_component("main")
             main.replace_component(
                 "note-edit", note_view
             )
             main.refresh()
+
+            tag_explorer = self.get_component("tag-explorer")
+            tag_explorer.refresh_all()
 
     def set_note(self, note):
         self._components["note-id"].value = note.id

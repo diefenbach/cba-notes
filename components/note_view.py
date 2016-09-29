@@ -2,21 +2,20 @@ from django.utils.translation import ugettext_lazy as _
 
 from cba import components
 
+# Circular import
 import notes.components.note_edit
 from notes.models import Note
 
 
 class NotesTable(components.Table):
-    """A Table component to display a list of Notes.
+    """A Table component to display a list of notes.
     """
-    def load_notes(self, current_id=None):
+    def load_notes(self, notes, current_note_id=None):
+        """Load notes as table rows and columns into the table.
+        """
         self.clear()
-
-        if current_id is None:
-            current_id = Note.objects.first().id
-
-        for note in Note.objects.all():
-            if note.id == current_id:
+        for note in notes:
+            if str(note.id) == str(current_note_id):
                 css_class = "clickable selected"
             else:
                 css_class = "clickable"
@@ -58,39 +57,34 @@ class NotesTable(components.Table):
 
 
 class NoteView(components.Group):
-    """
-    The NoteView consists out of a Table component to display the list of
-    notes and a HTML component to display the current selected one.
+    """The NoteView consists out of a Table component to display the list of
+    notes and a HTML component to display the current selected note.
     """
     def init_components(self):
-        notes_table = NotesTable(
+        self.notes_table = NotesTable(
             id="notes-table",
             label=_("Notes"),
             columns=["Title", "Tags", "Modified", "Edit", "Delete"],
         )
 
-        note_detail = components.HTML(
+        self.note_detail = components.HTML(
             id="note-detail",
             tag="div",
             attributes={"style": "padding-top:20px"},
         )
 
         self.initial_components = [
-            notes_table,
-            note_detail,
+            self.notes_table,
+            self.note_detail,
         ]
 
-        note_id = self.get_request().GET.get("note")
-        try:
-            note = Note.objects.get(pk=note_id)
-        except Note.DoesNotExist:
-            note = Note.objects.first()
-        if note:
-            note_detail.text = note.render()
-
-        notes_table.load_notes(note.id)
+        self.load_current_note()
 
     def delete_note(self):
+        """Deletes a note.
+
+        The note id is store within the event_id attribute.
+        """
         note_id = self.event_id.split("-")[-1]
         try:
             Note.objects.get(pk=note_id).delete()
@@ -104,6 +98,8 @@ class NoteView(components.Group):
         table.refresh()
 
     def handle_delete_note(self):
+        """Handles click on the delete link of a note.
+        """
         modal = components.ConfirmModal(
             id="modal",
             handler="delete_note",
@@ -116,6 +112,8 @@ class NoteView(components.Group):
         self.refresh()
 
     def handle_edit_note(self):
+        """Handles click on the edit link of a note.
+        """
         note_id = self.event_id.split("-")[-1]
 
         try:
@@ -131,23 +129,45 @@ class NoteView(components.Group):
             main.refresh()
 
     def handle_show_note(self):
+        """Handles click to a table row of a note.
+        """
         note_id = self.event_id.split("-")[-1]
         try:
             note = Note.objects.get(pk=note_id)
         except Note.DoesNotExist:
             pass
         else:
+            self.set_to_session("current-note-id", note_id)
             note_detail = self.get_component("note-detail")
             note_detail.text = note.render()
             note_detail.refresh()
 
-            notes_table = self.get_component("notes-table")
-            notes_table.load_notes(note.id)
-            notes_table.refresh()
+    def load_current_note(self):
+        """Loads the current note.
 
-    def set_current_note(self, note):
-        note_detail = self.get_component("note-detail")
-        note_detail.text = note.render()
+        Loads the current note into the table and detail view.
+        """
+        selected_tag_id = self.get_from_session("selected-tag-id")
+        current_note_id = self.get_from_session("current-note-id")
 
-        notes_table = self.get_component("notes-table")
-        notes_table.load_notes(note.id)
+        if selected_tag_id:
+            notes = Note.objects.filter(tags__id=selected_tag_id)
+        else:
+            notes = Note.objects.all()
+
+        if notes.filter(pk=current_note_id).exists():
+            current_note = Note.objects.get(pk=current_note_id)
+            current_note_id = current_note.id
+            current_note_text = current_note.render()
+        else:
+            current_note = notes.first()
+            if current_note:
+                self.set_to_session("current-note-id", current_note.id)
+                current_note_id = current_note.id
+                current_note_text = current_note.render()
+            else:
+                current_note_id = None
+                current_note_text = ""
+
+        self.notes_table.load_notes(notes, current_note_id)
+        self.note_detail.text = current_note_text
