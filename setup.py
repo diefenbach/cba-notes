@@ -5,7 +5,7 @@ from setuptools import setup
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.rst')).read()
 
-setup(name='notes',
+setup(name='cba-notes',
       version="0.0",
       description='Notes app based on CBA',
       long_description=README,
@@ -27,7 +27,8 @@ setup(name='notes',
       dependency_links=["http://pypi.iqpp.de/"],
       install_requires=[
           'setuptools',
-          'taggit',
+          'django-taggit',
           'django-markupfield',
+          'Markdown',
       ],
 )
