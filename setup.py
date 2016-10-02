@@ -27,5 +27,7 @@ setup(name='notes',
       dependency_links=["http://pypi.iqpp.de/"],
       install_requires=[
           'setuptools',
+          'taggit',
+          'django-markupfield',
       ],
 )
