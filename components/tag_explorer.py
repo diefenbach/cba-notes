@@ -1,31 +1,42 @@
+from django.db.models import Count
 from django.utils.translation import ugettext_lazy as _
+
 from taggit.models import Tag
+
 from cba import components
 
 
-class TagExplorer(components.Group):
+class TagExplorer(components.Menu):
+    def __init__(self, *args, **kwargs):
+        super(TagExplorer, self).__init__(*args, **kwargs)
+        self.direction = "vertical"
+
     def init_components(self):
         self.initial_components = []
         self.load_tags()
 
     def load_tags(self):
-        for tag in Tag.objects.all():
-            self.initial_components.append(
-                components.Link(id="tag-{}".format(tag.id), text=tag.name, handler="handle_select_tag")
-            )
-
         self.initial_components.append(
             components.HTML(
                 tag="div",
-                attributes={"style": "padding-top: 20px; font-weight: bold"},
                 initial_components=[
-                    components.Link(
-                        attributes={"style": "color: red"},
+                    components.MenuItem(
+                        attributes={"style": "color:red"},
                         id="reset-tags",
-                        text=_("Reset Tags"),
-                        handler="handle_reset_tags")
+                        name=_("Reset"),
+                        handler={"click": "server:handle_reset_tags"})
                 ])
         )
+
+        for tag in Tag.objects.annotate(note_count=Count("note")).filter(note_count__gt=0).order_by("-note_count"):
+            self.initial_components.append(
+                components.MenuItem(
+                    id="tag-{}".format(tag.id),
+                    name="{}".format(tag.name),
+                    label=tag.note_count,
+                    handler={"click": "server:handle_select_tag"})
+            )
+
 
     def handle_reset_tags(self):
         self.set_to_session("selected-tag-id", None)

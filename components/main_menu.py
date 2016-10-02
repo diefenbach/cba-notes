@@ -11,8 +11,8 @@ from notes.components.note_edit import NoteEdit
 class MainMenu(components.Menu):
     def init_components(self):
         self.initial_components = [
-            components.MenuItem(name="Add", handler="handle_add_note"),
-            components.MenuItem(name="Logout", handler="handle_logout"),
+            components.MenuItem(name="Add Note", handler={"click": "server:handle_add_note"}),
+            components.MenuItem(name="Logout", handler={"click": "server:handle_logout"}),
         ]
 
     def handle_about_us(self):

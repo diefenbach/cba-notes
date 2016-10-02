@@ -1,6 +1,8 @@
+from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
 from cba import components
+from cba import layouts
 
 # Circular import
 import notes.components.note_edit
@@ -23,7 +25,7 @@ class NotesTable(components.Table):
             self.add_component(
                 components.TableRow(
                     id="show-note-{}".format(note.id),
-                    handler="handle_show_note",
+                    handler={"click": "server:handle_show_note"},
                     css_class=css_class,
                     initial_components=[
                         components.TableColumn(
@@ -43,12 +45,12 @@ class NotesTable(components.Table):
                         ),
                         components.TableColumn(
                             initial_components=[
-                                components.Link(id="edit-note-{}".format(note.id), text="Edit", handler="handle_edit_note"),
-                            ]
-                        ),
-                        components.TableColumn(
-                            initial_components=[
-                                components.Link(id="delete-note-{}".format(note.id), text="Delete", handler="handle_delete_note"),
+                                components.HTML(
+                                    tag="i",
+                                    id="delete-note-{}".format(note.id),
+                                    handler={"click": "server:handle_delete_note"},
+                                    css_class="red large remove icon"
+                                ),
                             ]
                         ),
                     ]
@@ -61,19 +63,40 @@ class NoteView(components.Group):
     notes and a HTML component to display the current selected note.
     """
     def init_components(self):
+        self.search = components.TextInput(
+            id="search",
+            css_class="padding-bottom",
+            icon="search",
+            icon_position="right",
+            placeholder=_("Search"),
+            handler={"keyup": "server:handle_search"},
+        )
+
         self.notes_table = NotesTable(
             id="notes-table",
             label=_("Notes"),
-            columns=["Title", "Tags", "Modified", "Edit", "Delete"],
+            columns=[_("Title"), _("Tags"), _("Modified"), _("Delete")],
         )
 
         self.note_detail = components.HTML(
             id="note-detail",
             tag="div",
+            css_class="clickable",
             attributes={"style": "padding-top:20px"},
+            handler={"click": "server:handle_edit_note"},
         )
 
+        # self.initial_components = [
+        #     layouts.Split(
+        #         initial_components=[
+        #             self.notes_table,
+        #             self.note_detail,
+        #         ]
+        #     )
+        # ]
+
         self.initial_components = [
+            self.search,
             self.notes_table,
             self.note_detail,
         ]
@@ -93,18 +116,20 @@ class NoteView(components.Group):
         else:
             self.add_message(_("Note has been deleted!"), type="success")
 
-        table = self.get_component("notes-table")
-        table.load_notes()
-        table.refresh()
+        self.load_current_note()
+        self.refresh()
 
     def handle_delete_note(self):
         """Handles click on the delete link of a note.
         """
+        note_id = self.event_id.split("-")[-1]
+        note = Note.objects.get(pk=note_id)
+
         modal = components.ConfirmModal(
             id="modal",
             handler="delete_note",
             header=_("Delete Note!"),
-            text=_("Do you really want to delete the note?"),
+            text=_("Do you really want to delete the note with the title \"{}\"?".format(note.title)),
             event_id=self.event_id,
         )
 
@@ -114,7 +139,7 @@ class NoteView(components.Group):
     def handle_edit_note(self):
         """Handles click on the edit link of a note.
         """
-        note_id = self.event_id.split("-")[-1]
+        note_id = self.get_from_session("current-note-id")
 
         try:
             note = Note.objects.get(pk=note_id)
@@ -127,6 +152,13 @@ class NoteView(components.Group):
             main = self.get_component("main")
             main.replace_component("note-view", note_edit)
             main.refresh()
+
+    def handle_search(self):
+        self.set_to_session("search", self.search.value)
+        self.load_current_note()
+
+        self.note_detail.refresh()
+        self.notes_table.refresh()
 
     def handle_show_note(self):
         """Handles click to a table row of a note.
@@ -149,11 +181,19 @@ class NoteView(components.Group):
         """
         selected_tag_id = self.get_from_session("selected-tag-id")
         current_note_id = self.get_from_session("current-note-id")
+        search = self.get_from_session("search")
 
         if selected_tag_id:
             notes = Note.objects.filter(tags__id=selected_tag_id)
         else:
             notes = Note.objects.all()
+
+        if search:
+            notes = notes.filter(
+                Q(title__contains=search) |
+                Q(text__contains=search) |
+                Q(tags__name__contains=search)
+            )
 
         if notes.filter(pk=current_note_id).exists():
             current_note = Note.objects.get(pk=current_note_id)

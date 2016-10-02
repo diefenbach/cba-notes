@@ -17,10 +17,10 @@ class NoteEdit(components.Group):
         self.initial_components = [
             components.HiddenInput(id="note-id"),
             components.TextInput(id="title", label="Title"),
-            components.TextArea(id="text", label="Text"),
+            components.TextArea(id="text", label="Text", rows=40),
             tags,
-            components.Button(id="save-note", value=_("Save"), css_class="primary", handler="handle_save_note"),
-            components.Button(id="cancel", value=_("Cancel"), handler="handle_cancel"),
+            components.Button(id="save-note", value=_("Save"), css_class="primary", handler={"click": "server:handle_save_note"}),
+            components.Button(id="cancel", value=_("Cancel"), handler={"click": "server:handle_cancel"}),
         ]
 
         self._load_tags(tags)
@@ -68,6 +68,7 @@ class NoteEdit(components.Group):
                 note = Note.objects.get(pk=note_id.value)
                 note.title = title.value
                 note.text = text.value
+                note.save()
                 self.add_message(_("Note has been modified!"), type="success")
             else:
                 # Add a new note
@@ -75,16 +76,15 @@ class NoteEdit(components.Group):
                 self.add_message(_("Note has been added!"), type="success")
 
             # Refresh tags
-            note.tags.all().delete()
-            if tags.value:
-                for value in tags.value:
-                    note.tags.add(value)
-                note.save()
+            note.tags.clear()
+            for value in tags.value:
+                note.tags.add(value)
 
             # Replace edit view with note display view and select the current
             # added / edited note
+            self.set_to_session("current-note-id", note.id)
             note_view = NoteView(id="note-view")
-            note_view.load_current_note(note.id)
+            note_view.load_current_note()
 
             main = self.get_component("main")
             main.replace_component(
@@ -96,9 +96,10 @@ class NoteEdit(components.Group):
             tag_explorer.refresh_all()
 
     def set_note(self, note):
+        # TODO: Remove magic!
         self._components["note-id"].value = note.id
         self._components["title"].value = note.title
-        self._components["text"].value = note.text
+        self._components["text"].value = note.text.raw
         self._components["tags"].value = [tag.name for tag in note.tags.all()]
 
     def _load_tags(self, select):

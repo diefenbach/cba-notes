@@ -3,6 +3,7 @@ from __future__ import unicode_literals, print_function
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
+from markupfield.fields import MarkupField
 from taggit.managers import TaggableManager
 
 
@@ -13,16 +14,13 @@ class Note(models.Model):
         return "{} - {}".format(self.id, self.title)
 
     title = models.CharField(_("Title"), max_length=50)
-    text = models.TextField(_(u"Text"))
+    text = MarkupField(_(u"Text"), markup_type='markdown')
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     tags = TaggableManager()
 
     def render(self):
         html = "<h1>{}</h1>".format(self.title)
+        html += "<p>{}</p>".format(", ".join(self.tags.names()))
         html += "<p>{}</p>".format(self.text)
-        html += "<p>{}</p>".format(self.get_tags_as_string())
         return html
-
-    def get_tags_as_string(self):
-        return ", ".join([tag.name for tag in self.tags.all()])

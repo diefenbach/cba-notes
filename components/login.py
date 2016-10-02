@@ -5,35 +5,43 @@ from django.contrib.auth import login
 from django.utils.translation import ugettext_lazy as _
 
 from cba import components
-from cba import layouts
 
 
 class Login(components.Group):
     def init_components(self):
         self.initial_components = [
-            layouts.Grid(
-                id="login-form",
-                css_class="middle aligned center aligned",
+            components.Group(
+                css_class="ui container form",
+                attributes={"style": "margin-top: 200px; width: 400px"},
                 initial_components=[
-                    layouts.Column(
+                    components.HTML(
+                        tag="h2",
+                        attributes={"style": "text-align:center"},
+                        text=_("Please log in!"),
+                    ),
+                    components.Group(
+                        id="login-form",
+                        css_class="ui stacked segment",
                         initial_components=[
                             components.TextInput(
                                 id="username",
-                                label=_("Username")
+                                icon="user",
+                                placeholder=_("Username")
                             ),
                             components.TextInput(
                                 id="password",
-                                label=_("Password")
+                                icon="lock",
+                                placeholder=_("Password")
                             ),
                             components.Button(
                                 id="login",
                                 value="Login",
-                                handler="handle_login",
+                                handler={"click": "server:handle_login"},
                                 css_class="primary fluid"
                             ),
                         ],
                     ),
-                ],
+                ]
             ),
         ]
 
@@ -42,11 +50,9 @@ class Login(components.Group):
         password = self.get_component("password").value
         user = authenticate(username=username, password=password)
 
-        request = self.get_request()
-
         if user is not None:
             if user.is_active:
-                login(request, user)
+                login(self.get_request(), user)
                 root = self.get_root()
                 root.refresh_all()
                 root.add_message(_("You are logged in!"), "success")

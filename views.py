@@ -41,8 +41,10 @@ class NotesRoot(components.Group):
                         layouts.Column(
                             width=3,
                             initial_components=[
-                                components.HTML(text=_("Tag Explorer"), tag="div", css_class="ui sub header", attributes={"style": "padding: 10px 0"}),
-                                TagExplorer(id="tag-explorer"),
+                                components.HTML(text=_("Tag Explorer"), tag="div", css_class="ui sub header", attributes={"style": "padding-top: 10px"}),
+                                TagExplorer(
+                                    id="tag-explorer",
+                                ),
                             ],
                         ),
                     ]
