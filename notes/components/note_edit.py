@@ -18,6 +18,7 @@ class NoteEdit(components.Group):
             components.HiddenInput(id="note-id"),
             components.TextInput(id="title", label="Title"),
             components.TextArea(id="text", label="Text", rows=40),
+            components.FileInput(id="file", label="File"),
             tags,
             components.Button(id="save-note", value=_("Save"), css_class="primary", handler={"click": "server:handle_save_note"}),
             components.Button(id="cancel", value=_("Cancel"), handler={"click": "server:handle_cancel"}),

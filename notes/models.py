@@ -14,7 +14,7 @@ class Note(models.Model):
         return "{} - {}".format(self.id, self.title)
 
     title = models.CharField(_("Title"), max_length=50)
-    text = MarkupField(_(u"Text"), markup_type='markdown')
+    text = MarkupField(_("Text"), markup_type='markdown')
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     tags = TaggableManager()
