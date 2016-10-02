@@ -1,0 +1,4 @@
+include README.txt
+recursive-include docs *
+recursive-include notes/static *
+recursive-include notes/templates *
