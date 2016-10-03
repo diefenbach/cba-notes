@@ -122,7 +122,7 @@ class NoteEdit(components.Group):
         self._components["title"].value = note.title
         self._components["text"].value = note.text.raw
         self._components["tags"].value = [tag.name for tag in note.tags.all()]
-        self._components["files"].files = note.file_set.all()
+        self._components["files"].existing_files = note.file_set.all()
 
     def _load_tags(self, select):
         select.options = []

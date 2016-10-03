@@ -20,7 +20,7 @@ class NotesRoot(components.Group):
             ]
         else:
             self.initial_components = [
-                MainMenu(id="menu", css_class="large inverted"),
+                MainMenu(id="menu", css_class="large inverted margin-bottom-large"),
                 layouts.Grid(
                     initial_components=[
                         layouts.Column(
@@ -30,10 +30,7 @@ class NotesRoot(components.Group):
                                     id="main",
                                     css_class="ui container",
                                     initial_components=[
-                                        NoteView(
-                                            id="note-view",
-                                            attributes={"style": "padding-top: 10px"},
-                                        )
+                                        NoteView(id="note-view")
                                     ],
                                 ),
                             ],
@@ -41,7 +38,7 @@ class NotesRoot(components.Group):
                         layouts.Column(
                             width=3,
                             initial_components=[
-                                components.HTML(content=_("Tag Explorer"), tag="div", css_class="ui sub header", attributes={"style": "padding-top: 10px"}),
+                                components.HTML(content=_("Tag Explorer"), tag="div", css_class="ui sub header"),
                                 TagExplorer(
                                     id="tag-explorer",
                                 ),
