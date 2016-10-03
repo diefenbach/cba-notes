@@ -19,7 +19,13 @@ class NoteEdit(components.Group):
             components.HiddenInput(id="note-id"),
             components.TextInput(id="title", label=_("Title")),
             components.TextArea(id="text", label=_("Text"), rows=40),
-            components.FileInput(id="file", label=_("Files"), multiple=True),
+            components.FileInput(
+                id="files",
+                label=_("Files"),
+                icon="file",
+                icon_position="right",
+                multiple=True,
+            ),
             tags,
             components.Button(id="save-note", value=_("Save"), css_class="primary", handler={"click": "server:handle_save_note"}),
             components.Button(id="cancel", value=_("Cancel"), handler={"click": "server:handle_cancel"}),
@@ -48,7 +54,7 @@ class NoteEdit(components.Group):
         title = self.get_component("title")
         text = self.get_component("text")
         tags = self.get_component("tags")
-        file = self.get_component("file")
+        files = self.get_component("files")
 
         if title.value == "":
             title.error = _("Title is required!")
@@ -73,11 +79,16 @@ class NoteEdit(components.Group):
                 note.text = text.value
                 note.save()
 
-                for file_value in file.value:
-                    File.objects.create(
-                        note=note,
-                        file=file_value
-                    )
+                # Create files
+                for file_value in files.value:
+                    File.objects.create(note=note, file=file_value)
+
+                # Delete files
+                for to_delete_id in files.to_delete:
+                    try:
+                        File.objects.get(pk=to_delete_id).delete()
+                    except File.DoesNotExist:
+                        pass
 
                 self.add_message(_("Note has been modified!"), type="success")
             else:
@@ -111,6 +122,7 @@ class NoteEdit(components.Group):
         self._components["title"].value = note.title
         self._components["text"].value = note.text.raw
         self._components["tags"].value = [tag.name for tag in note.tags.all()]
+        self._components["files"].files = note.file_set.all()
 
     def _load_tags(self, select):
         select.options = []

@@ -32,7 +32,7 @@ class Note(models.Model):
         html += "<p>{}</p>".format(self.text)
 
         if self.file_set.all():
-            html += "<h1>Images</h1>"
+            html += "<h2>Images</h2>"
             for file in self.file_set.all():
                 html += "<img src='{}' width='100px' /> ".format(file.file.url)
 
