@@ -6,6 +6,7 @@ from taggit.models import Tag
 
 from cba import components
 from notes.components.note_view import NoteView
+from notes.models import File
 from notes.models import Note
 
 
@@ -16,9 +17,9 @@ class NoteEdit(components.Group):
         tags = components.Select(id="tags", label="Tags", multiple=True)
         self.initial_components = [
             components.HiddenInput(id="note-id"),
-            components.TextInput(id="title", label="Title"),
-            components.TextArea(id="text", label="Text", rows=40),
-            components.FileInput(id="file", label="File"),
+            components.TextInput(id="title", label=_("Title")),
+            components.TextArea(id="text", label=_("Text"), rows=40),
+            components.FileInput(id="file", label=_("Files"), multiple=True),
             tags,
             components.Button(id="save-note", value=_("Save"), css_class="primary", handler={"click": "server:handle_save_note"}),
             components.Button(id="cancel", value=_("Cancel"), handler={"click": "server:handle_cancel"}),
@@ -49,7 +50,6 @@ class NoteEdit(components.Group):
         tags = self.get_component("tags")
         file = self.get_component("file")
 
-
         if title.value == "":
             title.error = _("Title is required!")
         else:
@@ -71,8 +71,14 @@ class NoteEdit(components.Group):
                 note = Note.objects.get(pk=note_id.value)
                 note.title = title.value
                 note.text = text.value
-                note.file = file.value
                 note.save()
+
+                for file_value in file.value:
+                    File.objects.create(
+                        note=note,
+                        file=file_value
+                    )
+
                 self.add_message(_("Note has been modified!"), type="success")
             else:
                 # Add a new note

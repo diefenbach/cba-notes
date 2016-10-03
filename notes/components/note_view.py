@@ -215,21 +215,3 @@ class NoteView(components.Group):
 
         self.notes_table.load_notes(notes, current_note_id)
         self.note_detail.content = current_note_text
-
-        self.images.clear()
-
-        self.images.add_component(
-            components.HTML(
-                tag="h1",
-                content=_("Images"),
-                css_class="padding-bottom padding-top",
-            )
-        )
-
-        for file in current_note.file_set.all():
-            self.images.add_component(
-                components.Image(
-                    attributes={"width": "100px"},
-                    src=file.file.url,
-                )
-            )
