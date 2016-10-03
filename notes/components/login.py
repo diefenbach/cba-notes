@@ -17,7 +17,7 @@ class Login(components.Group):
                     components.HTML(
                         tag="h2",
                         attributes={"style": "text-align:center"},
-                        text=_("Please log in!"),
+                        content=_("Please log in!"),
                     ),
                     components.Group(
                         id="login-form",

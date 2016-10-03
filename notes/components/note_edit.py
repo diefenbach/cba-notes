@@ -47,6 +47,8 @@ class NoteEdit(components.Group):
         title = self.get_component("title")
         text = self.get_component("text")
         tags = self.get_component("tags")
+        file = self.get_component("file")
+
 
         if title.value == "":
             title.error = _("Title is required!")
@@ -69,6 +71,7 @@ class NoteEdit(components.Group):
                 note = Note.objects.get(pk=note_id.value)
                 note.title = title.value
                 note.text = text.value
+                note.file = file.value
                 note.save()
                 self.add_message(_("Note has been modified!"), type="success")
             else:

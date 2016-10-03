@@ -30,17 +30,17 @@ class NotesTable(components.Table):
                     initial_components=[
                         components.TableColumn(
                             initial_components=[
-                                components.HTML(text=note.title)
+                                components.HTML(content=note.title)
                             ]
                         ),
                         components.TableColumn(
                             initial_components=[
-                                components.HTML(text=", ".join([tag.name for tag in note.tags.all()]))
+                                components.HTML(content=", ".join([tag.name for tag in note.tags.all()]))
                             ]
                         ),
                         components.TableColumn(
                             initial_components=[
-                                components.HTML(text=note.modified)
+                                components.HTML(content=note.modified)
                             ]
                         ),
                         components.TableColumn(
@@ -95,12 +95,16 @@ class NoteView(components.Group):
         #     )
         # ]
 
+        self.images = components.Group(id="images")
+
         self.initial_components = [
             self.search,
             self.notes_table,
             self.note_detail,
+            self.images,
         ]
 
+    def after_initial_components(self):
         self.load_current_note()
 
     def delete_note(self):
@@ -171,7 +175,7 @@ class NoteView(components.Group):
         else:
             self.set_to_session("current-note-id", note_id)
             note_detail = self.get_component("note-detail")
-            note_detail.text = note.render()
+            note_detail.content = note.render()
             note_detail.refresh()
 
     def load_current_note(self):
@@ -210,4 +214,22 @@ class NoteView(components.Group):
                 current_note_text = ""
 
         self.notes_table.load_notes(notes, current_note_id)
-        self.note_detail.text = current_note_text
+        self.note_detail.content = current_note_text
+
+        self.images.clear()
+
+        self.images.add_component(
+            components.HTML(
+                tag="h1",
+                content=_("Images"),
+                css_class="padding-bottom padding-top",
+            )
+        )
+
+        for file in current_note.file_set.all():
+            self.images.add_component(
+                components.Image(
+                    attributes={"width": "100px"},
+                    src=file.file.url,
+                )
+            )

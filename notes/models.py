@@ -7,8 +7,15 @@ from markupfield.fields import MarkupField
 from taggit.managers import TaggableManager
 
 
-class Note(models.Model):
+class File(models.Model):
+    """Files belonging to a note.
     """
+    model = models.ForeignKey("Note", blank=True, null=True)
+    file = models.FileField()
+
+
+class Note(models.Model):
+    """A note.
     """
     def __unicode__(self):
         return "{} - {}".format(self.id, self.title)
