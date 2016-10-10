@@ -16,9 +16,17 @@ class NoteEdit(components.Group):
     def init_components(self):
         tags = components.Select(id="tags", label="Tags", multiple=True)
         self.initial_components = [
+            components.RadioCheckboxGroup(
+                id="fruits",
+                label="Fruits",
+                initial_components=[
+                    components.RadioCheckbox(label="Apple", value="apple", checked=True),
+                    components.RadioCheckbox(label="Pear", value="pear"),
+                ]
+            ),
             components.HiddenInput(id="note-id"),
             components.TextInput(id="title", label=_("Title")),
-            components.TextArea(id="text", label=_("Text"), rows=40),
+            components.Textarea(id="text", label=_("Text"), rows=40),
             components.FileInput(
                 id="files",
                 label=_("Files"),
