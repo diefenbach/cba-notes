@@ -12,6 +12,26 @@ from notes.models import Note
 class NotesTable(components.Table):
     """A Table component to display a list of notes.
     """
+    def get_count(self):
+        return Note.objects.count()
+
+    def get_data(self, start, end):
+        notes = []
+        for note in Note.objects.all()[start:end]:
+            notes.append([
+                note.title,
+                note.text.raw,
+                note.created,
+                components.HTML(
+                    tag="i",
+                    id="delete-note-{}".format(note.id),
+                    handler={"click": "server:handle_delete_note"},
+                    css_class="red large remove icon"
+                ),
+            ])
+
+        return notes
+
     def load_notes(self, notes, current_note_id=None):
         """Load notes as table rows and columns into the table.
         """
@@ -75,7 +95,7 @@ class NoteView(components.Group):
         self.notes_table = NotesTable(
             id="notes-table",
             label=_("Notes"),
-            columns=[_("Title"), _("Tags"), _("Modified"), _("Delete")],
+            headers=[_("Title"), _("Tags"), _("Modified"), _("Delete")],
         )
 
         self.note_detail = components.HTML(
@@ -105,14 +125,15 @@ class NoteView(components.Group):
         ]
 
     def after_initial_components(self):
-        self.load_current_note()
+        pass
+        # self.load_current_note()
 
     def delete_note(self):
         """Deletes a note.
 
         The note id is store within the event_id attribute.
         """
-        note_id = self.event_id.split("-")[-1]
+        note_id = self.component_value.split("-")[-1]
         try:
             Note.objects.get(pk=note_id).delete()
         except Note.DoesNotExist:
@@ -126,7 +147,7 @@ class NoteView(components.Group):
     def handle_delete_note(self):
         """Handles click on the delete link of a note.
         """
-        note_id = self.event_id.split("-")[-1]
+        note_id = self.component_value.split("-")[-1]
         note = Note.objects.get(pk=note_id)
 
         modal = components.ConfirmModal(
@@ -134,7 +155,7 @@ class NoteView(components.Group):
             handler="delete_note",
             header=_("Delete Note!"),
             text=_("Do you really want to delete the note with the title \"{}\"?".format(note.title)),
-            event_id=self.event_id,
+            event_id=self.component_value,
         )
 
         self.add_component(modal)
@@ -167,7 +188,7 @@ class NoteView(components.Group):
     def handle_show_note(self):
         """Handles click to a table row of a note.
         """
-        note_id = self.event_id.split("-")[-1]
+        note_id = self.component_value.split("-")[-1]
         try:
             note = Note.objects.get(pk=note_id)
         except Note.DoesNotExist:

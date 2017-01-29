@@ -41,7 +41,7 @@ class TagExplorer(components.Menu):
         notes_view.refresh()
 
     def handle_select_tag(self):
-        tag_id = self.event_id.split("-")[1]
+        tag_id = self.component_value.split("-")[1]
         self.set_to_session("selected-tag-id", tag_id)
         notes_view = self.get_component("note-view")
         notes_view.load_current_note()
