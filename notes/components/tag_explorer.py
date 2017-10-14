@@ -4,6 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from taggit.models import Tag
 
 from cba import components
+from cba import utils
 
 
 class TagExplorer(components.Menu):
@@ -35,14 +36,14 @@ class TagExplorer(components.Menu):
             )
 
     def handle_reset_tags(self):
-        self.set_to_session("selected-tag-id", None)
+        utils.set_to_session("selected-tag-id", None)
         notes_view = self.get_component("note-view")
         notes_view.load_current_note()
         notes_view.refresh()
 
     def handle_select_tag(self):
         tag_id = self.component_value.split("-")[1]
-        self.set_to_session("selected-tag-id", tag_id)
+        utils.set_to_session("selected-tag-id", tag_id)
         notes_view = self.get_component("note-view")
         notes_view.load_current_note()
         notes_view.refresh()

@@ -4,11 +4,11 @@ from django.utils.translation import ugettext_lazy as _
 
 from cba import components
 from cba import layouts
-from cba.views import CBAView
+from cba.base import CBAView
 
 from notes.components.login import Login
 from notes.components.main_menu import MainMenu
-from notes.components.note_view import NoteView
+from notes.components.note_display import NoteDisplay
 from notes.components.tag_explorer import TagExplorer
 
 
@@ -30,7 +30,7 @@ class NotesRoot(components.Group):
                                     id="main",
                                     css_class="ui container",
                                     initial_components=[
-                                        NoteView(id="note-view")
+                                        NoteDisplay(id="note-view")
                                     ],
                                 ),
                             ],

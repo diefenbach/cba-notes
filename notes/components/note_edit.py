@@ -5,7 +5,9 @@ from django.utils.translation import ugettext_lazy as _
 from taggit.models import Tag
 
 from cba import components
-from notes.components.note_view import NoteView
+from cba import utils
+
+from notes.components.note_display import NoteDisplay
 from notes.models import File
 from notes.models import Note
 
@@ -16,14 +18,6 @@ class NoteEdit(components.Group):
     def init_components(self):
         tags = components.Select(id="tags", label="Tags", multiple=True)
         self.initial_components = [
-            components.RadioCheckboxGroup(
-                id="fruits",
-                label="Fruits",
-                initial_components=[
-                    components.RadioCheckbox(label="Apple", value="apple", checked=True),
-                    components.RadioCheckbox(label="Pear", value="pear"),
-                ]
-            ),
             components.HiddenInput(id="note-id"),
             components.TextInput(id="title", label=_("Title")),
             components.Textarea(id="text", label=_("Text"), rows=40),
@@ -44,11 +38,11 @@ class NoteEdit(components.Group):
     def handle_cancel(self):
         """Handles click on the cancel button.
         """
-        note_view = NoteView(id="note-view")
+        note_display = NoteDisplay(id="note-view")
 
         main = self.get_component("main")
         main.replace_component(
-            "note-edit", note_view
+            "note-edit", note_display
         )
         main.refresh()
 
@@ -106,31 +100,24 @@ class NoteEdit(components.Group):
 
             # Refresh tags
             note.tags.clear()
-            for value in tags.value:
-                note.tags.add(value)
+            if tags.value:
+                for value in tags.value:
+                    note.tags.add(value)
 
             # Replace edit view with note display view and select the current
             # added / edited note
-            self.set_to_session("current-note-id", note.id)
-            note_view = NoteView(id="note-view")
-            note_view.load_current_note()
+            utils.set_to_session("current-note-id", note.id)
+            note_display = NoteDisplay(id="note-view")
+            note_display.load_current_note()
 
             main = self.get_component("main")
             main.replace_component(
-                "note-edit", note_view
+                "note-edit", note_display
             )
             main.refresh()
 
             tag_explorer = self.get_component("tag-explorer")
             tag_explorer.refresh_all()
-
-    def set_note(self, note):
-        # TODO: Remove magic!
-        self._components["note-id"].value = note.id
-        self._components["title"].value = note.title
-        self._components["text"].value = note.text.raw
-        self._components["tags"].value = [tag.name for tag in note.tags.all()]
-        self._components["files"].existing_files = note.file_set.all()
 
     def _load_tags(self, select):
         select.options = []
